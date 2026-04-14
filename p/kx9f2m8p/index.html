@@ -1,0 +1,2579 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLR - прототипы ботов (Participant + Sales)</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f0f0f0;
+    --phone-bg: #fff;
+    --tg-bg: #efeff4;
+    --tg-blue: #2481cc;
+    --tg-green: #4fae4e;
+    --tg-text: #000;
+    --tg-hint: #8e8e93;
+    --tg-bubble: #fff;
+    --tg-bubble-out: #effdde;
+    --tg-btn: #2481cc;
+    --note-bg: #fffbe6;
+    --note-border: #f0c040;
+    --radius: 18px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    gap: 0;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: #1c1c1e;
+    color: #fff;
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 8px;
+    margin-top: 16px;
+    padding-left: 10px;
+  }
+  .sidebar-title:first-child { margin-top: 0; }
+  .nav-btn {
+    background: none;
+    border: none;
+    color: #ccc;
+    text-align: left;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1.4;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-btn:hover { background: #2c2c2e; color: #fff; }
+  .nav-btn.active { background: var(--tg-blue); color: #fff; }
+  .nav-btn .role-tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .tag-new { background: #30d158; color: #000; }
+  .tag-member { background: #0a84ff; color: #fff; }
+  .tag-ex { background: #636366; color: #fff; }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    padding: 32px 24px;
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  /* PHONE */
+  .phone-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+  .phone {
+    width: 320px;
+    min-height: 600px;
+    background: var(--tg-bg);
+    border-radius: 36px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2), 0 0 0 1px rgba(0,0,0,0.08);
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-bar {
+    background: #fff;
+    padding: 12px 16px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #e5e5ea;
+    flex-shrink: 0;
+  }
+  .phone-bar-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--tg-blue);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; color: #fff; font-weight: 600;
+  }
+  .phone-bar-name { font-size: 14px; font-weight: 600; }
+  .phone-bar-status { font-size: 11px; color: var(--tg-hint); }
+  .phone-body {
+    flex: 1;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+  }
+
+  /* MESSAGES */
+  .msg {
+    max-width: 85%;
+    padding: 8px 12px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.5;
+    background: var(--tg-bubble);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+    white-space: pre-line;
+  }
+  .msg.out {
+    align-self: flex-end;
+    background: var(--tg-bubble-out);
+    border-bottom-right-radius: 4px;
+    border-bottom-left-radius: 14px;
+  }
+  .msg-time {
+    font-size: 11px;
+    color: var(--tg-hint);
+    text-align: right;
+    margin-top: 2px;
+  }
+
+  /* INLINE BUTTONS */
+  .inline-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .inline-btn {
+    background: #e3f0fb;
+    color: var(--tg-blue);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: center;
+    transition: background 0.15s;
+  }
+  .inline-btn:hover { background: #cce0f5; }
+  .inline-btn.active-btn { background: var(--tg-blue); color: #fff; }
+
+  /* MINI APP */
+  .mini-app {
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .mini-app-handle {
+    width: 36px; height: 4px;
+    background: #e0e0e0;
+    border-radius: 2px;
+    margin: 0 auto 4px;
+  }
+  .mini-app-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .mini-app-step {
+    font-size: 12px;
+    color: var(--tg-hint);
+  }
+  .progress-bar {
+    height: 4px;
+    background: #e5e5ea;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--tg-blue);
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+  .step-card {
+    background: #f9f9f9;
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .step-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .step-card-body {
+    font-size: 12px;
+    color: #444;
+    line-height: 1.5;
+    white-space: pre-line;
+  }
+  .step-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .step-done {
+    background: var(--tg-blue);
+    color: #fff;
+    border: none;
+    padding: 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .step-skip {
+    background: #f0f0f0;
+    color: #666;
+    border: none;
+    padding: 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .step-link {
+    display: block;
+    background: #f0f0f0;
+    color: var(--tg-blue);
+    text-decoration: none;
+    padding: 7px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    margin-top: 4px;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+  }
+  .step-link-primary {
+    background: var(--tg-blue);
+    color: #fff;
+  }
+
+  /* SCREEN LABEL */
+  .screen-label {
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* NOTES */
+  .notes {
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 8px;
+  }
+  .note {
+    background: var(--note-bg);
+    border-left: 3px solid var(--note-border);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #333;
+  }
+  .note-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #b08000;
+    margin-bottom: 4px;
+  }
+  .note.green { border-color: #30d158; background: #f0fdf4; }
+  .note.green .note-label { color: #1a7a35; }
+  .note.red { border-color: #ff3b30; background: #fff5f5; }
+  .note.red .note-label { color: #c0392b; }
+  .note.blue { border-color: var(--tg-blue); background: #f0f7ff; }
+  .note.blue .note-label { color: #1a5fa8; }
+
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap; }
+
+  /* STEP INACTIVE */
+  .step-card.inactive { opacity: 0.5; }
+  .step-card.done .step-card-title::before { content: "- "; color: var(--tg-green); }
+
+  /* HIDDEN */
+  .hidden { display: none; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { padding: 16px; }
+    .notes { width: 100%; }
+  }
+
+  /* === SALES BOT дополнительные стили === */
+  .sidebar-divider {
+    margin: 12px 10px;
+    border: none;
+    border-top: 1px solid #333;
+  }
+  .bot-tag {
+    display: block;
+    font-size: 10px;
+    color: #888;
+    padding: 0 10px 6px;
+    letter-spacing: 0.3px;
+  }
+  .phone-bar-avatar.orange { background: #ff6b35; }
+  .phone-bar-avatar.green-chat { background: #4fae4e; font-size: 12px; }
+  .inline-btn.approve { background: #e3fbe3; color: #1a7a35; }
+  .inline-btn.clarify  { background: #fff3e3; color: #b06000; }
+  .inline-btn.selected { background: var(--tg-blue); color: #fff; }
+  .progress-bar-wrap {
+    background: #fff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: #555;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  }
+  .msg-time.right { text-align: right; align-self: flex-end; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-title" style="color:#4fae4e;font-size:12px;">бот общения · @brainloverobotsbot</div>
+  <div style="padding:0 10px 6px;font-size:10px;color:#666;">welcome · онбординг · hub · артефакты · календарь · кто где</div>
+
+  <div class="sidebar-title">новичок · онбординг</div>
+  <button class="nav-btn active" onclick="show('s1')">0. welcome · чат <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="show('s2')">1. шаг 1 · что такое спринт <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="show('s3')">2. шаг 2 · календарь <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="show('s4')">3. шаг 3 · коуч-промпт <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="show('s4b')">4. шаг 4 · инструменты <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="show('s4c')" style="background:#fff4cc;color:#000;border:1px dashed #f0c040;">🆕 шаг 4.5 · как мы общаемся <span class="role-tag" style="background:#ffcc00;color:#000;">новенький</span></button>
+  <button class="nav-btn" onclick="show('s12')">5. шаг 5 · знакомимся <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="show('s5')">финал · основной режим <span class="role-tag tag-new">новый</span></button>
+
+  <div class="sidebar-title">участник · hub и артефакты</div>
+  <button class="nav-btn" onclick="show('s_hub')">0. хаб · blr хаб <span class="role-tag tag-member">участник</span></button>
+  <button class="nav-btn" onclick="show('s6')">6. /start · main menu <span class="role-tag tag-member">участник</span></button>
+  <button class="nav-btn" onclick="show('s7')">7. артефакты — список <span class="role-tag tag-member">участник</span></button>
+  <button class="nav-btn" onclick="show('s7a')">7a. radical alignment <span class="role-tag tag-member">участник</span></button>
+  <button class="nav-btn" onclick="show('s7b')">7b. health os <span class="role-tag tag-member">участник</span></button>
+  <button class="nav-btn" onclick="show('s8')">8. промпты <span class="role-tag tag-member">участник</span></button>
+  <button class="nav-btn" onclick="show('s15')">15. календарь (mini app) <span class="role-tag tag-member">участник</span></button>
+
+  <div class="sidebar-title" style="color:#ffcc00;">🆕 кто где</div>
+  <button class="nav-btn" onclick="show('loc_hub')" style="background:#332b00;">L0. 🌍 hub с карточкой «кто где» <span class="role-tag" style="background:#ffcc00;color:#000;">новенький</span></button>
+  <button class="nav-btn" onclick="show('loc1')" style="background:#332b00;">L1. 🌍 пустой стейт <span class="role-tag" style="background:#ffcc00;color:#000;">новенький</span></button>
+  <button class="nav-btn" onclick="show('loc2')" style="background:#332b00;">L2. 🌍 список по странам <span class="role-tag" style="background:#ffcc00;color:#000;">новенький</span></button>
+  <button class="nav-btn" onclick="show('loc3')" style="background:#332b00;">L3. 🌍 редактирование <span class="role-tag" style="background:#ffcc00;color:#000;">новенький</span></button>
+  <button class="nav-btn" onclick="show('loc4')" style="background:#332b00;">L4. 🌍 скрыт <span class="role-tag" style="background:#ffcc00;color:#000;">новенький</span></button>
+
+  <div class="sidebar-title">existing user · changelog tour</div>
+  <button class="nav-btn" onclick="show('s17')">17. экскурсия · где что лежит <span class="role-tag tag-member">участник</span></button>
+  <button class="nav-btn" onclick="show('s17b')">17b. меню · куда сейчас <span class="role-tag tag-member">участник</span></button>
+
+  <div class="sidebar-title">edge cases</div>
+  <button class="nav-btn" onclick="show('s13')">13. пропустил «знакомимся» <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="show('s10')">10. /start без подписки · alumni <span class="role-tag tag-ex">бывший</span></button>
+
+  <div class="sidebar-title">служебные экраны оператора</div>
+  <button class="nav-btn" onclick="show('op1')">op1. нотификация новой оплаты <span class="role-tag" style="background:#6B46C1;color:#fff;">оператор</span></button>
+  <button class="nav-btn" onclick="show('op2')">op2. ритуал оператора <span class="role-tag" style="background:#6B46C1;color:#fff;">оператор</span></button>
+
+  <div class="sidebar-title" style="color:#999;">архив · не делаем</div>
+  <button class="nav-btn" onclick="show('s11')" style="opacity:.5;">11. анонс нового участника <span class="role-tag" style="background:#999;color:#fff;">архив</span></button>
+  <button class="nav-btn" onclick="show('s14')" style="opacity:.5;">14. старт недели · понедельник <span class="role-tag" style="background:#999;color:#fff;">архив</span></button>
+
+  <hr class="sidebar-divider">
+  <div class="sidebar-title" style="color:#ff9f0a;font-size:12px;">бот продаж · @matskevichaibot</div>
+  <div style="padding:0 10px 6px;font-size:10px;color:#666;">анкета · оплата · продукты</div>
+
+  <button class="nav-btn" onclick="showSB('sb1')">1. /start · меню продуктов <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="showSB('sb2')">2. анкета Q1–Q2 <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="showSB('sb3')">3. анкета Q3–Q5 <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="showSB('sb4')">4. анкета Q6–Q7 <span class="role-tag tag-new">новый</span></button>
+  <button class="nav-btn" onclick="showSB('sb5')">5. анкета Q8–Q9 + финал <span class="role-tag tag-new">новый</span></button>
+
+  <div class="sidebar-title">оператор</div>
+  <button class="nav-btn" onclick="showSB('sb6')">6. уведомление оператору <span class="role-tag" style="background:#ff9f0a;color:#000;">оператор</span></button>
+  <button class="nav-btn" onclick="showSB('sb7')">7. одобрение → ссылка <span class="role-tag" style="background:#ff9f0a;color:#000;">оператор</span></button>
+
+  <div class="sidebar-title">статусы</div>
+  <button class="nav-btn" onclick="showSB('sb8')">8. заявка pending <span class="role-tag tag-member">pending</span></button>
+  <button class="nav-btn" onclick="showSB('sb9')">9. /start · уже участник <span class="role-tag tag-member">участник</span></button>
+
+  <hr class="sidebar-divider">
+  <div class="sidebar-title" style="color:#8e8e93;font-size:12px;">системные боты</div>
+  <div style="padding:4px 10px 4px;font-size:11px;color:#ccc;line-height:1.5;">
+    <div><b>@blr_crew_bot</b></div>
+    <div style="font-size:10px;color:#888;">activity logger — фиксирует события комьюнити</div>
+  </div>
+  <div style="padding:4px 10px 8px;font-size:11px;color:#ccc;line-height:1.5;">
+    <div><b>@blr_ops_bot</b></div>
+    <div style="font-size:10px;color:#888;">служебный — внутренние команды оператора</div>
+  </div>
+
+  <div class="sidebar-title" style="margin-top:12px">легенда</div>
+  <div style="padding: 0 10px; font-size: 12px; color: #666; line-height: 1.8;">
+    🟡 заметка - проблема<br>
+    🟢 заметка - хорошо<br>
+    🔴 заметка - блокер<br>
+    🔵 заметка - решение
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- SCREEN 1: Welcome -->
+<div class="screen active" id="s1">
+  <div class="phone-wrap">
+    <div class="screen-label">после оплаты · @brainloverobotsbot · первое сообщение</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">бот</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg">привет, Маша 🤍
+
+ты теперь в brain love & robots
+
+рады что ты здесь. помогу освоиться - это займёт пару минут</div>
+        <div class="inline-btns">
+          <button class="inline-btn" onclick="show('s2')">→ начать онбординг · 5 шагов</button>
+        </div>
+        <div class="msg-time">только что</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Принцип</div>
+      Первый экран - только тепло. Никакого таск-листа. Человек только что заплатил и зашёл - ему нужно почувствовать что он в правильном месте, а не получить инструкцию.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Одна кнопка</div>
+      «→ начать онбординг · 5 шагов» открывает онбординг (mini app). Не три кнопки - одна. Выбор на первом экране = стресс.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 «попадаешь в самый разгар»</div>
+      Создаёт ощущение причастности, не тревогу. Не «ты опоздала» - «ты в процессе, это хорошо».
+    </div>
+    <div class="note red">
+      <div class="note-label">🔴 Убрали</div>
+      Таск-лист «три шага чтобы начать» с первого сообщения - это ТЗ, не приветствие. Шаги переехали в онбординг.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN HUB: BLR Hub -->
+<div class="screen" id="s_hub">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · хаб · blr хаб</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app" style="min-height:520px">
+          <div class="mini-app-handle"></div>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:18px;font-weight:700;">brain, love & robots</div>
+            <div style="font-size:12px;color:#8e8e93;margin-top:2px;">сейчас: Radical Alignment</div>
+          </div>
+
+          <div style="background:#f9f9f9;border-radius:14px;overflow:hidden;margin-bottom:12px;">
+            <img src="/news/monday-start.png" alt="понедельник, погнали" style="width:100%;height:auto;display:block;">
+            <div style="padding:10px 12px;">
+              <div style="font-size:12px;font-weight:600;">новости понедельника</div>
+              <div style="font-size:11px;color:#8e8e93;margin-top:4px;">[заголовок последнего поста]</div>
+              <div style="font-size:11px;color:#2481cc;margin-top:6px;">→ читать в канале</div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="background:#f9f9f9;border-radius:14px;padding:14px;cursor:pointer;" onclick="show('s15')">
+              <div style="font-size:14px;font-weight:700;">📅 календарь</div>
+              <div style="font-size:12px;color:#555;margin-top:4px;">звонки, костры, воркшопы - ближайшие события</div>
+            </div>
+
+            <div style="background:#f9f9f9;border-radius:14px;padding:14px;cursor:pointer;" onclick="show('s7')">
+              <div style="font-size:14px;font-weight:700;">📚 артефакты</div>
+              <div style="font-size:12px;color:#555;margin-top:4px;">записи звонков, промпты, сетапы участников</div>
+            </div>
+
+            <div style="background:#f9f9f9;border-radius:14px;padding:14px;">
+              <div style="font-size:14px;font-weight:700;">💬 чат и канал</div>
+              <div style="font-size:12px;color:#555;margin-top:4px;margin-bottom:8px;">общение и посты комьюнити</div>
+              <div style="display:flex;gap:8px;">
+                <button class="step-link step-link-primary" style="flex:1;font-size:12px;">→ чат</button>
+                <button class="step-link" style="flex:1;font-size:12px;">→ канал</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Как открыть</div>
+      Hub открывается через menu-кнопку Telegram <b>blr хаб</b> слева от поля ввода.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Weekly news</div>
+      Баннер обновляется когда оператор форвардит пост из канала BLR в бот (или команда <code>/news &lt;url&gt;</code>).
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Единственный обзорный экран</div>
+      Здесь пользователь видит всё разом. После открытия любой карточки он попадает в конкретный sub-view.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: Онбординг шаг 1 - что сейчас происходит -->
+<div class="screen" id="s2">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · онбординг · шаг 1 из 5 · бот открывает платформу</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app">
+          <div class="mini-app-handle"></div>
+          <div>
+            <div class="mini-app-title">онбординг</div>
+            <div class="mini-app-step">шаг 1 из 5</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:20%"></div></div>
+
+          <div class="step-card">
+            <div class="step-card-title">что сейчас происходит</div>
+            <div class="step-card-body">апрельский спринт - Radical Alignment. это про то, как выстроить отношения с AI: не инструмент, а среда в которой ты работаешь и думаешь. несколько недель вместе - звонки с практиками, эксперименты, разговоры в чате
+
+основные каналы связи:
+
+📢 канал - записи звонков и посты. можно читать
+💬 чат - вопросы, практика, обсуждения
+🌿 знакомимся - ветка где все представляются</div>
+            <div class="step-actions" style="margin-top:12px;">
+              <button class="step-done" onclick="show('s3')">→ понятно, дальше</button>
+            </div>
+          </div>
+
+          <div class="step-card inactive">
+            <div class="step-card-title">2. календарь</div>
+          </div>
+          <div class="step-card inactive">
+            <div class="step-card-title">3. коуч-промпт</div>
+          </div>
+          <div class="step-card inactive">
+            <div class="step-card-title">4. инструменты</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Решение: шаг 1 = ориентация, не действие</div>
+      Человек читает, понимает где он, нажимает «→ понятно, дальше» - и остаётся в боте. Никаких ссылок «зайди в чат» - это выбрасывает из потока. Первое социальное действие - знакомимся - в финале онбординга, когда он уже понял где находится.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Три места - зачем каждый</div>
+      Канал / чат / знакомимся - объясняем одной строкой каждый. После этого человек знает куда идти когда будет готов, не теряется.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Описание спринта - плейсхолдер</div>
+      Текст «Radical Alignment. это про то...» - берётся из cohort_configs.bot_texts. Меняется каждый спринт без деплоя. Описание уточнено у Юли - финальная формулировка может отличаться.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 дата звонка</div>
+      Убрана с шага 1 - переехала в шаг 2 (календарь). Сначала ориентация, потом расписание.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 3: Онбординг шаг 2 - календарь -->
+<div class="screen" id="s3">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · онбординг · шаг 2 из 5</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app">
+          <div class="mini-app-handle"></div>
+          <div>
+            <div class="mini-app-title">онбординг</div>
+            <div class="mini-app-step">шаг 2 из 5</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>
+
+          <div class="step-card done">
+            <div class="step-card-title">✓ что сейчас происходит</div>
+          </div>
+
+          <div class="step-card">
+            <div class="step-card-title">календарь</div>
+            <div class="step-card-body">чтобы не пропустить звонки - добавь календарь комьюнити
+
+все события появляются автоматически: звонки, воркшопы, костры
+
+можно открыть прямо здесь в боте, или подписаться - тогда события сами придут в Google / Apple Calendar</div>
+            <button class="step-link step-link-primary" onclick="window.location.href='/calendar'">📅 открыть в боте</button>
+            <button class="step-link" onclick="window.open('https://api.lu.ma/ics/get?entity=calendar&id=cal-1zSpU7Sz3nzNMcP','_blank')">↗ подписаться на Google Calendar</button>
+            <button class="step-link" onclick="window.open('https://api.lu.ma/ics/get?entity=calendar&id=cal-1zSpU7Sz3nzNMcP','_blank')">↗ подписаться на Apple Calendar</button>
+            <div class="step-actions">
+              <button class="step-done" onclick="show('s4')">готово ✓</button>
+              <button class="step-skip" onclick="show('s4')">пропустить</button>
+            </div>
+          </div>
+
+          <div class="step-card inactive">
+            <div class="step-card-title">3. коуч-промпт</div>
+          </div>
+          <div class="step-card inactive">
+            <div class="step-card-title">4. инструменты</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Контекст перед действием</div>
+      Сначала - зачем: «там уже есть пятничный звонок». Потом - как: три варианта добавить. Человек понимает что именно он добавляет.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 «Открыть в боте»</div>
+      Открывает вкладку Календарь в Mini App (экран 15). Нативные карточки событий без перехода на Luma. RSVP прямо здесь.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 iCal-ссылка</div>
+      Google/Apple Calendar - iCal feed от Luma. Ссылка: <code>https://api.lu.ma/ics/get?entity=calendar&id=cal-1zSpU7Sz3nzNMcP</code>. Синхронизируется автоматически.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Если пропустил</div>
+      Кнопка «пропустить» → шаг 3. Человек всегда сможет открыть календарь из вкладки или через /start.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 4: Онбординг шаг 3 - коуч-промпт -->
+<div class="screen" id="s4">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · онбординг · шаг 3 из 5</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app">
+          <div class="mini-app-handle"></div>
+          <div>
+            <div class="mini-app-title">онбординг</div>
+            <div class="mini-app-step">шаг 3 из 5</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div>
+
+          <div class="step-card done"><div class="step-card-title">что сейчас происходит</div></div>
+          <div class="step-card done"><div class="step-card-title">календарь</div></div>
+
+          <div class="step-card">
+            <div class="step-card-title">коуч-промпт</div>
+            <div class="step-card-body">коуч-промпт от Димы Мацкевича - AI-дневник для утренних и вечерних чекинов
+
+2 минуты утром, 2 вечером. помогает замечать что важно и не терять себя в потоке
+
+скопируй промпт в ChatGPT или Claude, ничего ставить не нужно</div>
+            <div style="background:#f5f5f5;border-radius:10px;padding:10px;font-size:11px;color:#666;margin:8px 0;font-style:italic;">«димин коуч-промпт - гениальная идея. я неделю веду этот дневник - он потрясающе зеркалит»</div>
+            <button class="step-link step-link-primary">📋 скопировать промпт</button>
+            <button class="step-link">→ как пользоваться</button>
+            <div class="step-actions">
+              <button class="step-done" onclick="show('s4b')">готово ✓</button>
+              <button class="step-skip" onclick="show('s4b')">пропустить</button>
+            </div>
+          </div>
+
+          <div class="step-card inactive">
+            <div class="step-card-title">4. инструменты</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Сильный шаг</div>
+      Цитата реального участника работает. Кнопка "скопировать" - нулевое трение.
+    </div>
+    <div class="note red">
+      <div class="note-label">🔴 Убрали</div>
+      «это самый популярный инструмент комьюнити 🔥» - маркетинговый налёт. Цитата участника говорит сама за себя - дополнительная реклама не нужна.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN s4b: Онбординг шаг 4 - инструменты -->
+<div class="screen" id="s4b">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · онбординг · шаг 4 из 5</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app">
+          <div class="mini-app-handle"></div>
+          <div>
+            <div class="mini-app-title">онбординг</div>
+            <div class="mini-app-step">шаг 4 из 5</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
+
+          <div class="step-card done"><div class="step-card-title">✓ что сейчас происходит</div></div>
+          <div class="step-card done"><div class="step-card-title">✓ календарь</div></div>
+          <div class="step-card done"><div class="step-card-title">✓ коуч-промпт</div></div>
+
+          <div class="step-card">
+            <div class="step-card-title">инструменты</div>
+            <div class="step-card-body">участники BLR работают с AI каждый день - вот инструменты которые реально используются в комьюнити
+
+рекомендуем: Claude, Claude Code, Codex
+
+но можно начать со своих привычных инструментов - осваивайся, а потом уже переходи на новый стек если захочется
+
+в артефактах - промпты и гайды от участников: как начать, что попробовать, личные сетапы</div>
+            <button class="step-link step-link-primary" onclick="show('s7')">→ артефакты спринтов</button>
+            <div class="step-actions">
+              <button class="step-done" onclick="show('s12')">готово ✓</button>
+              <button class="step-skip" onclick="show('s12')">пропустить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Зачем шаг</div>
+      Человек знает что BLR про AI - но не знает с чего начать технически. Этот шаг даёт ориентир без давления: «вот что используют, можно посмотреть».
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Кнопка «→ артефакты спринтов»</div>
+      Открывает вкладку «артефакты» (экран 7). Там спринты, звонки, промпты.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Не перегружать</div>
+      Нет конкретных ссылок на Claude/Codex здесь - это в платформе. На этом шаге только ориентир «что такое и куда смотреть».
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN s4c: Онбординг шаг 4.5 - как мы тут общаемся (НОВЕНЬКИЙ) -->
+<a id="s4c-anchor"></a>
+<div class="screen" id="s4c">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · онбординг · welcome-принципы · 🆕 новенький</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app">
+          <div class="mini-app-handle"></div>
+          <div style="background:#fff4cc;border:2px dashed #f0c040;border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:11px;font-weight:700;color:#8a6500;text-align:center;letter-spacing:0.5px;">🆕 новенький экран</div>
+          <div>
+            <div class="mini-app-title">онбординг</div>
+            <div class="mini-app-step">welcome-принципы · между «инструменты» и «знакомимся»</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:90%"></div></div>
+
+          <div class="step-card done"><div class="step-card-title">что сейчас происходит</div></div>
+          <div class="step-card done"><div class="step-card-title">календарь</div></div>
+          <div class="step-card done"><div class="step-card-title">коуч-промпт</div></div>
+          <div class="step-card done"><div class="step-card-title">инструменты</div></div>
+
+          <div class="step-card">
+            <div class="step-card-title">как мы тут общаемся</div>
+            <div class="step-card-body">пять штук. не правила — настройка оптики
+
+👁 замечать себя
+что чувствую? как реагирую — это про меня
+
+🔥 смелость
+не отсутствие страха — готовность пойти в него
+
+🎲 игривость
+страх + любопытство. здесь playground
+
+🔒 конфиденциальность
+что внутри — остаётся внутри
+
+🤝 согласие
+не уверен в границах — спроси</div>
+            <div class="step-actions">
+              <button class="step-done" onclick="show('s12')">понятно ✓</button>
+              <button class="step-skip" onclick="show('s12')">пропустить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note" style="border-color:#ffcc00;background:#fffbe0;">
+      <div class="note-label" style="color:#8a6500;">🆕 НОВЕНЬКИЙ ЭКРАН</div>
+      Вставлен между «инструменты» (s4b) и «знакомимся» (s12). Это пятый из пяти шагов настройки оптики — не правила, а как мы здесь друг с другом.
+    </div>
+    <div class="note green">
+      <div class="note-label">🟢 Тон</div>
+      Не «обязаны», не «нельзя» — «настройка оптики». Принципы как линза, не как стена. Важно для людей которые приходят настороженно.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Куда дальше</div>
+      «понятно ✓» и «пропустить» оба ведут на s12 (знакомимся). Это не блокирующий шаг — но прочитать важно.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 TOTAL_STEPS</div>
+      В существующих шагах не трогала «шаг X из 5» чтобы не ломать готовую разметку. Если решим что это полноценный шаг — пересчитать на «из 6» во всех s2–s12.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 12: Онбординг шаг 5 - знакомимся -->
+<div class="screen" id="s12">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · онбординг · шаг 5 из 5 · новый</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app">
+          <div class="mini-app-handle"></div>
+          <div>
+            <div class="mini-app-title">онбординг</div>
+            <div class="mini-app-step">шаг 5 из 5</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+
+          <div class="step-card done"><div class="step-card-title">что сейчас происходит</div></div>
+          <div class="step-card done"><div class="step-card-title">календарь</div></div>
+          <div class="step-card done"><div class="step-card-title">коуч-промпт</div></div>
+          <div class="step-card done"><div class="step-card-title">инструменты</div></div>
+
+          <div class="step-card">
+            <div class="step-card-title">познакомься с чатом</div>
+            <div class="step-card-body">в чате комьюнити есть ветка «знакомимся» - там все новые участники пишут первое сообщение о себе
+
+зайди в чат, найди ветку справа в списке веток
+
+кто ты, откуда, что привело сюда - коротко, как захочется</div>
+            <button class="step-link step-link-primary">💬 зайти в чат комьюнити</button>
+            <button class="step-link" onclick="show('s5')">→ куда дальше</button>
+            <div class="step-actions">
+              <button class="step-done" onclick="show('s5')">готово ✓</button>
+              <button class="step-skip" onclick="show('s13')">пропустить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Два пути</div>
+      «готово» → финал онбординга (S5).<br>
+      «Пропустить» → бот в личку: «хорошо - когда будет время, загляни» (S13).<br>
+      В обоих случаях карточка в ветку «знакомимся» уже опубликована автоматически при принятии.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Карточка - автоматически</div>
+      Бот публикует краткое сообщение в ветку сразу при одобрении - не ждёт действия человека. Шаг 5 только предлагает написать что-то своё поверх карточки.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 «→ куда дальше»</div>
+      В реальном коде эта кнопка завершает онбординг, записывает прогресс в БД и шлёт S6 в чат (finishOnboarding с sendMenu=true).
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Кнопка «пропустить»</div>
+      Пропуск не означает «человек не познакомился» - карточка уже в ветке. Бот напоминает один раз. Без давления.
+    </div>
+    <div class="note red">
+      <div class="note-label">🔴 Что нужно</div>
+      - message_thread_id ветки «знакомимся» → deep link в кнопке<br>
+      - Создать ветку в чате BLR если нет
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 5: Финал онбординга -->
+<div class="screen" id="s5">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · онбординг · финал</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app">
+          <div class="mini-app-handle"></div>
+          <div>
+            <div class="mini-app-title">онбординг</div>
+            <div class="mini-app-step">всё готово</div>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+
+          <div class="step-card done"><div class="step-card-title">✓ что сейчас происходит</div></div>
+          <div class="step-card done"><div class="step-card-title">✓ календарь</div></div>
+          <div class="step-card done"><div class="step-card-title">✓ коуч-промпт</div></div>
+          <div class="step-card done"><div class="step-card-title">✓ инструменты</div></div>
+
+          <div style="background:#f9f9f9;border-radius:14px;padding:16px;text-align:center;margin-top:8px;">
+            <div style="font-size:24px;margin-bottom:8px;">🤍</div>
+            <div style="font-size:15px;font-weight:600;margin-bottom:6px;">ты на месте</div>
+            <div style="font-size:13px;color:#666;margin-bottom:12px;">онбординг готов - теперь ты в основном режиме. /start всегда открывает меню</div>
+            <button class="step-done" onclick="show('s6')" style="width:100%;padding:10px;margin-bottom:6px;">перейти в основной режим бота</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Финал</div>
+      Один экран, одна кнопка - без выбора, без лишних ссылок.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 6+7: /start → артефакты (один поток) -->
+<div class="screen" id="s6">
+  <div class="phone-wrap">
+    <div class="screen-label">/start · участник комьюнити</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">бот</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg out">/ start</div>
+        <div class="msg">сейчас: Radical Alignment
+
+«blr хаб» слева от поля ввода - там всё: календарь, артефакты, чат и канал
+
+быстрые кнопки снизу 👇</div>
+        <div class="msg-time">только что</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phone-wrap">
+    <div class="screen-label">клик «артефакты» → mini app открывается</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app" style="min-height:520px">
+          <div class="mini-app-handle"></div>
+          <div class="mini-app-title">артефакты</div>
+          <div style="font-size:12px;color:#8e8e93;margin-bottom:14px;">спринты комьюнити - звонки, эксперименты, результаты</div>
+
+          <div style="background:#2481cc0f;border:1px solid #2481cc30;border-radius:14px;padding:12px;margin-bottom:10px;cursor:pointer;" onclick="show('s7a')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#2481cc;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;">сейчас идёт</div>
+                <div style="font-size:14px;font-weight:700;color:#000;">Radical Alignment</div>
+                <div style="font-size:12px;color:#555;margin-top:3px;">апр 2026 · [тема спринта]</div>
+                <div style="font-size:11px;color:#8e8e93;margin-top:4px;">2 звонка · артефакты появляются</div>
+              </div>
+              <div style="font-size:18px;color:#2481cc;margin-top:4px;">›</div>
+            </div>
+          </div>
+
+          <div style="background:#f9f9f9;border-radius:14px;padding:12px;margin-bottom:10px;cursor:pointer;" onclick="show('s7b')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <div style="font-size:10px;font-weight:600;color:#8e8e93;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;">завершён</div>
+                <div style="font-size:14px;font-weight:700;color:#000;">Health OS</div>
+                <div style="font-size:12px;color:#555;margin-top:3px;">фев-мар 2026 · AI-команда для здоровья</div>
+                <div style="font-size:11px;color:#8e8e93;margin-top:4px;">5 звонков · артефакты участников</div>
+              </div>
+              <div style="font-size:18px;color:#8e8e93;margin-top:4px;">›</div>
+            </div>
+          </div>
+
+          <div style="background:#f9f9f9;border-radius:14px;padding:12px;cursor:pointer;" onclick="show('s8')">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:14px;font-weight:600;color:#000;">промпты</div>
+                <div style="font-size:12px;color:#555;margin-top:2px;">коуч-промпт, стартер-паки, AI-коуч</div>
+              </div>
+              <div style="font-size:18px;color:#8e8e93;">›</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 S6+S7 - один поток</div>
+      /start → бот-сообщение со статусом спринта → клик «артефакты» → mini app открывается. два экрана - одна навигационная единица.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Карточки со статусами</div>
+      «сейчас идёт» / «завершён» - статус виден сразу. Вводная «спринты комьюнити - звонки, эксперименты, результаты» объясняет что это за экран.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 динамический текст</div>
+      Название спринта и дата звонка берутся из cohort_configs. Меняются без деплоя.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Reply Keyboard</div>
+      В чате снизу теперь постоянная 4-кнопочная клавиатура: «📚 артефакты», «📅 календарь», «💬 чат», «📢 канал». Это reply keyboard, не inline.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 7: Артефакты - главная (standalone, для back-навигации из 7a/7b) -->
+<div class="screen" id="s7">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · артефакты · главная</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app" style="min-height:520px">
+          <div class="mini-app-handle"></div>
+          <div class="mini-app-title">артефакты</div>
+          <div style="font-size:12px;color:#8e8e93;margin-bottom:14px;">спринты комьюнити - звонки, эксперименты, результаты</div>
+
+          <div style="background:#2481cc0f;border:1px solid #2481cc30;border-radius:14px;padding:12px;margin-bottom:10px;cursor:pointer;" onclick="show('s7a')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#2481cc;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;">сейчас идёт</div>
+                <div style="font-size:14px;font-weight:700;color:#000;">Radical Alignment</div>
+                <div style="font-size:12px;color:#555;margin-top:3px;">апр 2026 · [тема спринта]</div>
+                <div style="font-size:11px;color:#8e8e93;margin-top:4px;">2 звонка · артефакты появляются</div>
+              </div>
+              <div style="font-size:18px;color:#2481cc;margin-top:4px;">›</div>
+            </div>
+          </div>
+
+          <div style="background:#f9f9f9;border-radius:14px;padding:12px;margin-bottom:10px;cursor:pointer;" onclick="show('s7b')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+              <div>
+                <div style="font-size:10px;font-weight:600;color:#8e8e93;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px;">завершён</div>
+                <div style="font-size:14px;font-weight:700;color:#000;">Health OS</div>
+                <div style="font-size:12px;color:#555;margin-top:3px;">фев-мар 2026 · AI-команда для здоровья</div>
+                <div style="font-size:11px;color:#8e8e93;margin-top:4px;">5 звонков · артефакты участников</div>
+              </div>
+              <div style="font-size:18px;color:#8e8e93;margin-top:4px;">›</div>
+            </div>
+          </div>
+
+          <div style="background:#f9f9f9;border-radius:14px;padding:12px;cursor:pointer;" onclick="show('s8')">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <div style="font-size:14px;font-weight:600;color:#000;">промпты</div>
+                <div style="font-size:12px;color:#555;margin-top:2px;">коуч-промпт, стартер-паки, AI-коуч</div>
+              </div>
+              <div style="font-size:18px;color:#8e8e93;">›</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 7a: Radical Alignment - открытый спринт -->
+<div class="screen" id="s7a">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · артефакты · Radical Alignment</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app" style="min-height:520px">
+          <div class="mini-app-handle"></div>
+          <button class="step-link" style="font-size:12px;margin-bottom:4px;" onclick="show('s7')">← артефакты</button>
+          <div style="font-size:10px;font-weight:700;color:#2481cc;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:2px;">сейчас идёт</div>
+          <div class="mini-app-title" style="font-size:17px;">Radical Alignment</div>
+          <div style="font-size:12px;color:#8e8e93;margin-bottom:14px;">апр 2026 · сейчас идёт</div>
+
+          <div style="background:#f9f9f9;border-radius:12px;padding:12px;font-size:12px;color:#555;line-height:1.5;">
+            артефакты появляются по ходу спринта. первые звонки на этой неделе - загляни позже
+          </div>
+
+          <button class="step-link step-link-primary" style="font-size:12px;margin-top:10px;" onclick="window.location.href='/calendar'">📅 расписание спринта</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Заглушка на время спринта</div>
+      Пока артефактов нет, показываем короткий текст. Список карточек появляется по мере добавления звонков.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 «расписание спринта»</div>
+      Кнопка ведёт в календарь, чтобы увидеть ближайшие события.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 7b: Health OS - завершённый спринт -->
+<div class="screen" id="s7b">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · артефакты · Health OS</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app" style="min-height:520px">
+          <div class="mini-app-handle"></div>
+          <button class="step-link" style="font-size:12px;margin-bottom:4px;" onclick="show('s7')">← артефакты</button>
+          <div style="font-size:10px;font-weight:600;color:#8e8e93;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:2px;">завершён</div>
+          <div class="mini-app-title" style="font-size:17px;">Health OS</div>
+          <div style="font-size:12px;color:#8e8e93;margin-bottom:14px;">фев-мар 2026 · AI-команда для здоровья</div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="background:#f9f9f9;border-radius:12px;padding:12px;cursor:pointer;" onclick="show('s7b')">
+              <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Влад Куклев · Health OS - готовый сетап</div>
+              <div style="font-size:12px;color:#555;margin-bottom:8px;">AI-команда из 5 ролей: коуч, стратег, аналитик, планировщик, поведенческий терапевт. Считает калории, ведёт тренировки, анализирует кровь.</div>
+              <div style="display:flex;gap:10px;">
+                <a href="https://youtu.be/calHnWdfPjs" style="font-size:11px;color:#2481cc;">▶ запись</a>
+                <a href="https://github.com/matsako/brain-love-and-robots/blob/main/cohorts/health%20os/calls/02-vlad%20kooklev/health-system-setup.md" style="font-size:11px;color:#2481cc;">health system setup</a>
+                <a href="https://github.com/matsako/brain-love-and-robots/blob/main/cohorts/health%20os/calls/02-vlad%20kooklev/health-os-setup-guide.md" style="font-size:11px;color:#2481cc;">health os setup guide</a>
+              </div>
+            </div>
+
+            <div style="background:#f9f9f9;border-radius:12px;padding:12px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Тоня + Маша · Deep research + Health Dashboard</div>
+              <div style="font-size:12px;color:#555;margin-bottom:8px;">Тоня: система из 18 агентов для медрёсерча. Маша: health-дашборд и playbook жизни как операционной системы.</div>
+              <div style="display:flex;gap:10px;">
+                <a href="https://youtu.be/T13PJgHVDJM" style="font-size:11px;color:#2481cc;">▶ запись</a>
+                <a href="https://github.com/matsako/brain-love-and-robots/blob/main/cohorts/health%20os/calls/03-tony%20and%20masha/masha's%20case/health-dashboard-playbook.md" style="font-size:11px;color:#2481cc;">Маша: health dashboard playbook</a>
+                <a href="https://github.com/matsako/brain-love-and-robots/blob/main/cohorts/health%20os/calls/03-tony%20and%20masha/masha's%20case/how%20to%20setup.md" style="font-size:11px;color:#2481cc;">Маша: how to setup</a>
+                <a href="https://github.com/matsako/brain-love-and-robots/blob/main/cohorts/health%20os/calls/03-tony%20and%20masha/tonya's%20case/how%20to%20setup.md" style="font-size:11px;color:#2481cc;">Тоня: how to setup</a>
+                <a href="https://github.com/matsako/brain-love-and-robots/blob/main/cohorts/health%20os/calls/03-tony%20and%20masha/tonya's%20case/system_philosophy.md" style="font-size:11px;color:#2481cc;">Тоня: system philosophy</a>
+              </div>
+            </div>
+
+            <div style="background:#f9f9f9;border-radius:12px;padding:12px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Лёша Евдокимов · CGM-архитектура + DIY-гайд</div>
+              <div style="font-size:12px;color:#555;margin-bottom:8px;">Мониторинг глюкозы с AI. Telegram-бот, n8n, Airtable, GPT-4o vision, Apple Watch, CGM. Фото еды - КБЖУ + паттерны.</div>
+              <div style="display:flex;gap:10px;">
+                <a href="https://youtu.be/t-a13yvLYuM" style="font-size:11px;color:#2481cc;">▶ запись</a>
+                <a href="https://github.com/matsako/brain-love-and-robots/blob/main/cohorts/health%20os/calls/04-alex%20evdokimov/ARCHITECTURE.md" style="font-size:11px;color:#2481cc;">ARCHITECTURE.md</a>
+                <a href="https://github.com/matsako/brain-love-and-robots/blob/main/cohorts/health%20os/calls/04-alex%20evdokimov/DIY-GUIDE.md" style="font-size:11px;color:#2481cc;">DIY-GUIDE.md</a>
+              </div>
+            </div>
+
+            <div style="background:#f9f9f9;border-radius:12px;padding:12px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:3px;">Катя Кириллова · Life OS - 8 агентов-коучей</div>
+              <div style="font-size:12px;color:#555;margin-bottom:8px;">Supabase + 20 Edge Functions + 8 агентов + LangGraph. Oura, Garmin, анализы за 10 лет. Персональные рекомендации в Telegram.</div>
+              <div style="display:flex;gap:10px;">
+                <a href="https://youtu.be/x-rWLWm9VVQ" style="font-size:11px;color:#2481cc;">▶ запись</a>
+                <a href="https://github.com/matsako/brain-love-and-robots/blob/main/cohorts/health%20os/calls/05-kate%20kirillova/Life_OS_Architecture_Overview.md" style="font-size:11px;color:#2481cc;">Life OS architecture overview</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Завершённый спринт</div>
+      Все звонки доступны. Структура: дата + имя + что сделал + ссылка на запись + ссылка на артефакт.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 8: Промпты -->
+<div class="screen" id="s8">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · артефакты · промпты</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app" style="min-height:520px">
+          <div class="mini-app-handle"></div>
+          <div class="mini-app-title">промпты</div>
+
+          <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">
+            <button class="inline-btn" style="white-space:nowrap;font-size:12px;" onclick="show('s7')">← артефакты</button>
+            <button class="inline-btn active-btn" style="white-space:nowrap;font-size:12px;">промпты</button>
+            <button class="inline-btn" style="white-space:nowrap;font-size:12px;">записи звонков</button>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="background:#f9f9f9;border-radius:12px;padding:12px;">
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">коуч-промпт</div>
+              <div style="font-size:12px;color:#555;margin-bottom:8px;">AI-дневник для утренних и вечерних чекинов. Три версии: базовый / персональный / CEO.</div>
+              <button class="step-link step-link-primary" style="font-size:12px;">v1 базовый</button>
+              <button class="step-link" style="font-size:12px;">v2 персональный</button>
+              <button class="step-link" style="font-size:12px;">v3 CEO</button>
+              <button class="step-link" style="font-size:12px;">как пользоваться</button>
+            </div>
+
+            <div style="background:#f9f9f9;border-radius:12px;padding:12px;">
+              <div style="font-size:12px;color:#999;margin-bottom:2px;">Health OS</div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:4px;">стартер-пак промптов</div>
+              <div style="font-size:12px;color:#555;margin-bottom:8px;">по темам: энергия · питание · сон · геном</div>
+              <button class="step-link step-link-primary" style="font-size:12px;">starter-pack.md</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Контент уже есть</div>
+      Все промпты в GitHub/brain-love-and-robots/coach prompt/ и /cohorts/health os/prompts/starter-pack.md - готово к вставке.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Механика</div>
+      Кнопка "скопировать" работает как в текущем онбординге - navigator.clipboard.writeText(). Ничего нового делать не нужно.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 10: Отписавшийся -->
+<div class="screen" id="s10">
+  <div class="phone-wrap">
+    <div class="screen-label">/start · подписка неактивна · has_community=false</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">бот</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg out">/start</div>
+        <div class="msg">привет 👋
+
+помним тебя по спринту Health OS
+
+материалы с того времени остались - они твои</div>
+        <div class="inline-btns">
+          <button class="inline-btn">📚 мои артефакты</button>
+          <button class="inline-btn">→ вернуться в комьюнити</button>
+        </div>
+        <div class="msg-time">только что</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Логика доступа</div>
+      Отписавшийся сохраняет доступ к материалам тех когорт, которые шли пока он был участником.<br><br>
+      <b>Флаги в БД:</b><br>
+      - <code>has_community = false</code> (при отписке/кике из канала)<br>
+      - <code>has_lab</code> - НЕ сбрасывать при отписке от комьюнити<br><br>
+      <b>Что доступно:</b> всё из <code>offers</code> со статусом <code>paid</code> на момент отписки. Когорта фиксируется в поле <code>cohort</code>. Бот смотрит paid offers → даёт доступ к материалам этих когорт.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Механика «мои артефакты»</div>
+      Mini app фильтрует контент по когортам из paid offers пользователя. Новые материалы (текущий спринт Radical Alignment) - не показывать. Только то что было в его время.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Кнопка «вернуться»</div>
+      Ведёт в @matskevichaibot. Если у него уже есть approved application - сразу на ссылку оплаты. Если нет - краткая анкета (2-3 вопроса) или просто «напиши нам».
+    </div>
+    <div class="note red">
+      <div class="note-label">🔴 Что нужно для реализации</div>
+      - При отписке: <code>has_community=false</code>, <code>has_lab</code> не трогать<br>
+      - Запрос: <code>SELECT cohort FROM offers WHERE user_id=X AND status='paid'</code><br>
+      - Mini app: фильтр контента по cohort-списку пользователя
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 11: [АРХИВ - НЕ дЕЛАЕМ] Карточка бота в ветке «знакомимся» - краткая, шаблонная -->
+<div class="screen" id="s11">
+  <div class="phone-wrap">
+    <div class="screen-label">чат blr · топик «знакомимся» · автоматически при принятии</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar" style="background:#4fae4e;font-size:12px;">💬</div>
+        <div>
+          <div class="phone-bar-name">знакомимся</div>
+          <div class="phone-bar-status">brain love & robots · чат</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg" style="max-width:95%;">у нас новенькая 🤍
+
+Маша, @Maria_Kulikovskaia - из Португалии
+
+собирает ботов и агентов, учит врачей делать то же самое
+
+можно поздороваться или задать вопрос :)</div>
+        <div class="msg-time">только что · @brainloverobotsbot</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Шаблон - поля из анкеты</div>
+      Имя (Q1) + @ник (TG auto) + страна (Q2) + occupation_details (Q4) - коротко.<br>
+      Всё остальное (ai_stack, gconf, ценность) - не показываем. Это для оператора, не для знакомства.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Автоматически при одобрении</div>
+      Оператор нажимает «✓ одобрить» (SB6) → бот шлёт ссылку оплаты участнику → И публикует карточку в топик «знакомимся». Не ждёт пока человек оплатит или напишет сам.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Род «новенький / новенькая»</div>
+      Берём из имени или задаём нейтрально: «у нас новый участник». Пока автоматически не определить - можно добавить поле в анкету (Q1.5: «как к тебе обращаться - он/она/они») или оставить нейтральным.
+    </div>
+    <div class="note red">
+      <div class="note-label">🔴 Что нужно</div>
+      env: <code>COMMUNITY_CHAT_ID</code> + <code>WELCOME_THREAD_ID</code><br>
+      Триггер: approve callback → sendMessage в топик
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 13: Ответ бота при пропуске шага «знакомимся» -->
+<div class="screen" id="s13">
+  <div class="phone-wrap">
+    <div class="screen-label">@brainloverobotsbot · личка · пропустил шаг знакомства</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">бот</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg">хорошо :)
+
+когда будет время - загляни в ветку «знакомимся» и напиши пару слов о себе</div>
+        <div class="inline-btns">
+          <button class="inline-btn">💬 ветка «знакомимся»</button>
+          <button class="inline-btn">→ завершить</button>
+        </div>
+        <div class="msg-time">только что</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Тон</div>
+      Не «вы пропустили важный шаг». Просто «хорошо» - без давления. Напоминание один раз, с кнопкой-якорем.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 «→ завершить»</div>
+      Завершает онбординг и отправляет S6 в чат (finishOnboarding с sendMenu=true).
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Повторное напоминание</div>
+      Если через 3 дня человек так и не зашёл - ещё одно сообщение в личку. Одно, не серия. После этого - молчим.
+    </div>
+  </div>
+</div>
+
+<!-- OP1: Уведомление в группе операторов -->
+<div class="screen" id="op1">
+  <div class="phone-wrap">
+    <div class="screen-label">служебное · @matskevichaibot в группе операторов · после новой оплаты community</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">S</div>
+        <div>
+          <div class="phone-bar-name">@matskevichaibot</div>
+          <div class="phone-bar-status">sales bot</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg">💳 новая оплата community
+Anastasia · @an_shup
+
+👤 открыть в личке
+
+📝 готовый текст (долгий тап чтобы скопировать):</div>
+        <pre class="msg" style="font-family:monospace;background:#f5f5f7;padding:10px;border-radius:8px;white-space:pre-line;box-shadow:none;">привет, Anastasia! я Ксюша из brain, love & robots 🤍
+
+ты теперь в комьюнити - рада что ты здесь
+
+у нас есть бот - там всё, что нужно:
+- онбординг за 5 шагов (как тут всё устроено)
+- календарь звонков и событий
+- артефакты прошлых спринтов
+- чат и канал
+
+заходи → https://t.me/brainloverobotsbot?start=welcome
+
+если нужно будет помочь сориентироваться - я на связи 🤍</pre>
+        <div class="msg-time">только что · @matskevichaibot</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Источник сообщения</div>
+      автоматически от sales bot <code>@matskevichaibot</code> (он в операторской группе для anketa-нотификаций, плюс теперь и payment-уведомления)
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Блок с текстом</div>
+      HTML тег <code>&lt;pre&gt;</code>. На Telegram Mobile долгий тап → Copy. На Desktop - выделение + Ctrl+C. Один тап копирует весь блок с переносами.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Ссылка «открыть в личке»</div>
+      формат <code>tg://user?id=&lt;telegram_user_id&gt;</code>. Открывает DM с юзером даже если у оператора нет его в контактах.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Шаблон текста</div>
+      живёт в <code>blr-bot/lib/welcome-templates.ts</code> функция <code>renderCommunityWelcomeTemplate(name)</code>. Правится одной строкой - далее redeploy на Railway.
+    </div>
+    <div class="note red">
+      <div class="note-label">🔴 Только для оператора</div>
+      это НЕ показывается юзеру. Это внутренняя кнопка ритуала - оператор скопировал → отправил → всё. Юзер получает только готовое сообщение в своей личке.
+    </div>
+  </div>
+</div>
+
+<!-- OP2: Ритуал оператора -->
+<div class="screen" id="op2">
+  <div class="phone-wrap">
+    <div class="screen-label">служебное · ритуал оператора после оплаты community</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">K</div>
+        <div>
+          <div class="phone-bar-name">Ксения</div>
+          <div class="phone-bar-status">оператор</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div style="font-size:16px;font-weight:700;margin-bottom:4px;">твой ритуал: 30-40 сек на одного</div>
+        <div class="msg" style="max-width:95%;">1. Видишь нотификацию от @matskevichaibot в группе операторов
+2. Долгий тап на блок с готовым текстом → Telegram предлагает Copy → тап
+3. Тап на «открыть в личке» → откроется DM с новым участником
+4. Paste → Send</div>
+        <div style="font-size:11px;color:#8e8e93;">~30-40 секунд на человека. Текст в lib/welcome-templates.ts - правь там если захочешь поменять.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Почему вручную</div>
+      контроль. Оператор видит кому и что отправляется, может не отправлять если оплата странная (возврат/ошибка), или персонализировать если нужно.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Параллельно автоматически</div>
+      бот ТАКЖЕ шлёт sales-bot welcome сразу после оплаты (с deep link на participant bot). То есть юзер получает 2 сообщения: автоматическое от sales bot + персональное от Ксении. Двойная страховка.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Альтернативы которые обдумывались</div>
+      - Полностью ручной (3-5 мин на человека) - отвергнуто<br>
+      - Inline query через BotFather - сложнее настройка, не выбрали<br>
+      - Userbot автоматический - риск отказа сессии, не выбрали
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Load estimate</div>
+      при 5 оплатах/неделя = ~3 минуты твоего времени в неделю.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 14: [АРХИВ - НЕ дЕЛАЕМ] Старт недели - понедельник-дайджест -->
+<div class="screen" id="s14">
+
+  <!-- Шаблон (структура) -->
+  <div class="phone-wrap">
+    <div class="screen-label">шаблон · структура каждую неделю</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">чат</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg" style="max-width:95%;font-size:13px;line-height:1.6;">🗞 <b>старт недели · пн [дата]</b>
+
+📅 <b>ближайшее событие</b>
+[название] · [дата, время]
+[одна строка о чём]</div>
+        <div class="inline-btns">
+          <button class="inline-btn" style="opacity:0.5;">📅 в календарь / зарегистрироваться</button>
+        </div>
+        <div class="msg" style="max-width:95%;font-size:13px;line-height:1.6;">💬 <b>что в чате</b>
+[активность недели - ветки, вопросы, что идёт]</div>
+        <div class="msg" style="max-width:95%;font-size:13px;line-height:1.6;">🟺 <b>в канале</b>
+[что вышло - запись, пост, материал] → смотреть</div>
+        <div class="inline-btns">
+          <button class="inline-btn" style="opacity:0.5;">▶ смотреть / читать</button>
+        </div>
+        <div class="msg" style="max-width:95%;font-size:13px;line-height:1.6;">🟌 <b>[опционально: объявление / продукт]</b>
+[одна строка о чём]</div>
+        <div class="inline-btns">
+          <button class="inline-btn" style="opacity:0.5;">→ подробнее</button>
+        </div>
+        <div class="msg-time">понедельник ~10:00 · @brainloverobotsbot</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Пример заполненного -->
+  <div class="phone-wrap">
+    <div class="screen-label">пример · неделя 14 апр</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">чат</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg" style="max-width:95%;font-size:13px;line-height:1.6;">🗞 <b>старт недели · пн 14 апр</b>
+
+📅 <b>ближайшее событие</b>
+Макс Янукович - завтра в 10:00
+как оставаться собой рядом с AI</div>
+        <div class="inline-btns">
+          <button class="inline-btn">📅 добавить в календарь</button>
+        </div>
+        <div class="msg" style="max-width:95%;font-size:13px;line-height:1.6;">💬 <b>что в чате</b>
+протокол пеннебейкера в разгаре - завтра финальный вопрос. пятница - костёр с Сашей Приставко: выгрузить что происходит с AI</div>
+        <div class="inline-btns">
+          <button class="inline-btn">→ зарегистрироваться на костёр</button>
+        </div>
+        <div class="msg" style="max-width:95%;font-size:13px;line-height:1.6;">🟺 <b>в канале</b>
+запись с димой - как закрывали спринт здоровья и что открывает апрель</div>
+        <div class="inline-btns">
+          <button class="inline-btn">▶ смотреть запись</button>
+        </div>
+        <div class="msg" style="max-width:95%;font-size:13px;line-height:1.6;">🟌 <b>лаба стартует 27 апр</b>
+ставим AI-систему здоровья под свой кейс
+для комьюнити - €125, для новых - €250</div>
+        <div class="inline-btns">
+          <button class="inline-btn">→ подробнее и записаться</button>
+        </div>
+        <div class="msg-time">понедельник · @brainloverobotsbot</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Структура фиксирована - контент меняется</div>
+      Каждую неделю четыре секции: ближайшее событие / что в чате / в канале / объявление (опц.). Прототип не трогается - меняется только текст в шаблоне.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Откуда берётся контент</div>
+      📅 События - из Luma API (ближайшее из calendar/events)<br>
+      💬 Чат - вручную из heartbeat-kit или cohort_configs<br>
+      🟺 Канал - ссылка на последний пост/запись<br>
+      🟌 Объявление - из cohort_configs.weekly_announcement (если есть)
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Что нужно</div>
+      - Cron каждый пн ~10:00 МСК<br>
+      - Блок 🟌 опциональный: если нет объявления - секция не выходит<br>
+      - Если нет событий на неделе - блок 📅 тоже пропускается
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 15: Календарь (Mini App) -->
+<div class="screen" id="s15">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · вкладка «Календарь»</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">календарь</div>
+        </div>
+      </div>
+      <div class="phone-body" style="padding:12px 10px; background:#efeff4;">
+
+        <!-- Header -->
+        <div style="margin-bottom:10px;">
+          <button class="step-link" style="font-size:12px;margin-bottom:6px;">← назад</button>
+          <div style="font-size:20px;font-weight:700;color:#000;">Календарь</div>
+          <div style="font-size:12px;color:#8e8e93;margin-top:2px;">события комьюнити</div>
+        </div>
+
+        <!-- Weekly news banner -->
+        <div style="background:#fff;border-radius:14px;overflow:hidden;margin-bottom:12px;">
+          <img src="/news/monday-start.png" alt="понедельник, погнали" style="width:100%;height:auto;display:block;">
+          <div style="padding:10px 12px;">
+            <div style="font-size:12px;font-weight:700;">новости понедельника</div>
+            <div style="font-size:11px;color:#8e8e93;margin-top:4px;">[заголовок последнего поста]</div>
+            <div style="margin-top:8px;">
+              <a href="#" style="font-size:11px;color:#2481cc;">→ читать в канале</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter tabs -->
+        <div style="display:flex;gap:6px;margin-bottom:12px;">
+          <button style="background:#2481cc;color:#fff;border:none;border-radius:12px;padding:5px 12px;font-size:11px;font-weight:600;">все события</button>
+          <button style="background:#fff;color:#8e8e93;border:none;border-radius:12px;padding:5px 12px;font-size:11px;font-weight:600;">эта неделя</button>
+        </div>
+
+        <!-- EVENT 2: обычное событие - с кнопкой RSVP -->
+        <div style="background:#2481cc1a;border:1px solid #2481cc4d;border-radius:14px;padding:10px 12px;margin-bottom:8px;">
+          <div style="margin-bottom:4px;">
+            <span style="font-size:10px;font-weight:700;color:#2481cc;letter-spacing:0.5px;text-transform:uppercase;">эта неделя</span>
+          </div>
+          <img src="https://via.placeholder.com/260x90/2481cc/ffffff?text=воркшоп" style="width:100%;height:70px;object-fit:cover;border-radius:8px;margin-bottom:6px;" />
+          <div style="font-size:13px;font-weight:600;line-height:1.3;color:#000;">воркшоп: агенты на практике</div>
+          <div style="font-size:11px;color:#8e8e93;margin-top:2px;">пт 18 апр, 19:00 мск</div>
+          <div style="font-size:11px;color:#8e8e93;">онлайн</div>
+          <div style="font-size:11px;color:#000;margin-top:6px;line-height:1.4;opacity:0.7;">разбираем как строить агентов под реальные задачи - не в теории</div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+            <button style="background:#2481cc;color:#fff;border:none;border-radius:10px;padding:6px 12px;font-size:11px;font-weight:600;">хочу прийти</button>
+            <a href="#" style="font-size:11px;color:#2481cc;">подробнее →</a>
+          </div>
+        </div>
+
+        <!-- EVENT 3: обычное без обложки -->
+        <div style="background:#fff;border-radius:14px;padding:10px 12px;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600;line-height:1.3;color:#000;">demo day - апрельский спринт</div>
+          <div style="font-size:11px;color:#8e8e93;margin-top:2px;">пт 25 апр, 18:00 мск</div>
+          <div style="font-size:11px;color:#8e8e93;">онлайн</div>
+          <div style="font-size:11px;color:#000;margin-top:6px;line-height:1.4;opacity:0.7;">участники показывают что получилось за спринт</div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+            <button style="background:#2481cc;color:#fff;border:none;border-radius:10px;padding:6px 12px;font-size:11px;font-weight:600;">хочу прийти</button>
+            <a href="#" style="font-size:11px;color:#2481cc;">подробнее →</a>
+          </div>
+        </div>
+
+        <!-- EVENT 4: ещё одно -->
+        <div style="background:#fff;border-radius:14px;padding:10px 12px;margin-bottom:8px;">
+          <div style="font-size:13px;font-weight:600;line-height:1.3;color:#000;">костёр - встреча офлайн</div>
+          <div style="font-size:11px;color:#8e8e93;margin-top:2px;">сб 3 мая</div>
+          <div style="font-size:11px;color:#8e8e93;">Москва, TBD</div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
+            <button style="background:#2481cc;color:#fff;border:none;border-radius:10px;padding:6px 12px;font-size:11px;font-weight:600;">хочу прийти</button>
+            <a href="#" style="font-size:11px;color:#2481cc;">подробнее →</a>
+          </div>
+        </div>
+
+      </div>
+      <!-- Tab bar -->
+      <div style="display:flex;background:#fff;border-top:1px solid #e0e0e0;padding:6px 0 2px;">
+        <div style="flex:1;text-align:center;font-size:10px;color:#8e8e93;padding:4px 0;">🏠<br>главная</div>
+        <div style="flex:1;text-align:center;font-size:10px;color:#2481cc;padding:4px 0;font-weight:600;">📅<br>календарь</div>
+        <div style="flex:1;text-align:center;font-size:10px;color:#8e8e93;padding:4px 0;">📚<br>курсы</div>
+        <div style="flex:1;text-align:center;font-size:10px;color:#8e8e93;padding:4px 0;">👥<br>участники</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Что изменилось</div>
+      Iframe Luma заменён на нативные карточки. данные - из Luma API. Нет перехода на сторонний сервис.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Новостные события (весь день)</div>
+      Создаются в Luma как «All day». В основной ленте такие события отфильтрованы - чтобы не дублировать weekly news card сверху.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Weekly news card</div>
+      Сверху экрана показывается баннер «понедельник, погнали» с ссылкой на пост.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 «← назад»</div>
+      Кнопка в шапке закрывает mini app через <code>webApp.close()</code>.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Обычные события (с временем)</div>
+      Кнопка «хочу прийти» → регистрация через Luma API. Email спрашивается один раз и сохраняется. Подтверждение приходит от Luma на почту.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Email</div>
+      Если email ещё не сохранён - появляется оверлей «укажи email» (один раз за всё время). После сохранения - все следующие RSVP без вопросов.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Трекинг</div>
+      Luma хранит кто записался (approval_status) и кто пришёл (checked_in_at). Мы также пишем в таблицу event_rsvps - чтобы знать кто из наших участников регистрировался через бота.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Фильтр «эта неделя»</div>
+      Вкладка показывает только события в ближайшие 7 дней. Полезно если в календаре много событий на месяц вперёд.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN S17: Экскурсия - первый экран для существующих участников -->
+<div class="screen" id="s17">
+  <div class="phone-wrap">
+    <div class="screen-label">@brainloverobotsbot · существующий участник · шаг 1 из 2</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">бот</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg out">/start</div>
+        <div class="msg">привет 👋
+
+кое-что обновилось - быстро покажем где что теперь лежит
+
+📢 <b>канал</b> - записи звонков и посты
+💬 <b>чат</b> - вопросы, практика, обсуждения
+🌿 <b>знакомимся</b> - ветка где все представляются
+📅 <b>календарь</b> - теперь прямо в боте</div>
+        <div class="inline-btns">
+          <button class="inline-btn" onclick="show('s17b')">→ дальше</button>
+        </div>
+        <div class="msg-time">только что</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Принцип</div>
+      Максимально коротко: 4 строки, 4 места. Никаких объяснений - просто карта. Участник уже в комьюнити, не нужно объяснять что такое BLR.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Когда показывать</div>
+      Один раз - при первом /start после деплоя. Флаг <code>changelog_seen_at</code> в bot_users: NULL → показать, заполнить. Потом → обычный S6.
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN S17b: После экскурсии - меню с пояснением -->
+<div class="screen" id="s17b">
+  <div class="phone-wrap">
+    <div class="screen-label">@brainloverobotsbot · существующий участник · шаг 2 из 2</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">бот</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg">сейчас: Radical Alignment
+
+«blr хаб» слева от поля ввода - там всё: календарь, артефакты, чат и канал
+
+в чате есть ветка «знакомимся» - зайди через кнопку «чат» и найди её справа в списке
+
+быстрые кнопки снизу 👇</div>
+        <div class="msg-time">только что</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Логика</div>
+      Экскурсия (S17) = где что. Меню (S17b) = куда сейчас. Два коротких шага вместо одного перегруженного экрана.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Календарь - первая кнопка</div>
+      Главное новшество - выводим вперёд. Участник сразу видит ближайшие события и может нажать «хочу прийти» не уходя из бота.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Reply Keyboard</div>
+      В чате снизу теперь постоянная 4-кнопочная клавиатура: «📚 артефакты», «📅 календарь», «💬 чат», «📢 канал».
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 После этого экрана</div>
+      Следующие /start → обычный S6 (без экскурсии). changelog_seen_at уже заполнен.
+    </div>
+  </div>
+</div>
+
+<!-- ===== SALES BOT ЭКРАНЫ ===== -->
+
+<!-- SB1: /start - меню продуктов -->
+<div class="screen" id="sb1">
+  <div class="phone-wrap">
+    <div class="screen-label">@matskevichaibot · /start · новый пользователь</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar orange">M</div>
+        <div>
+          <div class="phone-bar-name">matskevich ai</div>
+          <div class="phone-bar-status">бот</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="msg">привет!
+
+здесь можно присоединиться к brain, love and robots - подписочной среде для людей, которые встраивают AI в жизнь всерьёз
+
+что тебя интересует?</div>
+        <div class="inline-btns">
+          <button class="inline-btn" onclick="showSB('sb2')">→ хочу в комьюнити</button>
+          <button class="inline-btn">→ лаба health os - 250€</button>
+          <button class="inline-btn">→ коуч-промпт (бесплатно)</button>
+          <button class="inline-btn">→ следить за обновлениями</button>
+        </div>
+        <div class="msg-time">только что</div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Логика экрана</div>
+      Новый пользователь (нет флагов). «Следить» → канал @brainloveandrobots. «Коуч-промпт» → текст промпта прямо в боте.<br>Если has_community=true: кнопка «хочу в комьюнити» → «перейти в бот участника». Если has_lab=true: изменить цену или убрать кнопку.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Вординг</div>
+      Не «программа», не «обучение» - «среда», «практика». Лаба ≠ спринт: лаба = Health OS (платный), спринт = Radical Alignment (комьюнити).
+    </div>
+  </div>
+</div>
+
+<!-- SB2: Анкета Q1-Q2 -->
+<div class="screen" id="sb2">
+  <div class="phone-wrap">
+    <div class="screen-label">@matskevichaibot · анкета · Q1-Q2</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar orange">M</div>
+        <div><div class="phone-bar-name">matskevich ai</div><div class="phone-bar-status">бот</div></div>
+      </div>
+      <div class="phone-body">
+        <div class="inline-btns" style="margin-bottom:4px;"><button class="inline-btn selected">→ хочу в комьюнити</button></div>
+        <div class="progress-bar-wrap">вопрос 1 из 9<div class="progress-bar"><div class="progress-fill" style="width:11%"></div></div></div>
+        <div class="msg">как тебя зовут?</div>
+        <div class="msg out">Маша</div>
+        <div class="msg-time right">только что</div>
+        <div class="progress-bar-wrap">вопрос 2 из 9<div class="progress-bar"><div class="progress-fill" style="width:22%"></div></div></div>
+        <div class="msg">откуда ты? страна, город</div>
+        <div class="msg out">Португалия, Лиссабон</div>
+        <div class="msg-time right">только что</div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note green"><div class="note-label">🟢 Прогресс-бар</div>Показывается перед каждым вопросом - снижает отток в середине.</div>
+    <div class="note blue"><div class="note-label">🔵 Хранение состояния</div>Статус <code>draft</code> в БД - переживает рестарты. При повторном /start → продолжить или начать заново.</div>
+  </div>
+</div>
+
+<!-- SB3: Анкета Q3-Q5 -->
+<div class="screen" id="sb3">
+  <div class="phone-wrap">
+    <div class="screen-label">@matskevichaibot · анкета · Q3-Q5</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar orange">M</div>
+        <div><div class="phone-bar-name">matskevich ai</div><div class="phone-bar-status">бот</div></div>
+      </div>
+      <div class="phone-body">
+        <div class="progress-bar-wrap">вопрос 3 из 9<div class="progress-bar"><div class="progress-fill" style="width:33%"></div></div></div>
+        <div class="msg">что тебе больше подходит?</div>
+        <div class="inline-btns">
+          <button class="inline-btn">работаю в найме</button>
+          <button class="inline-btn">топ-менеджер</button>
+          <button class="inline-btn">фаундер</button>
+          <button class="inline-btn selected">солопренёр</button>
+          <button class="inline-btn">фрилансер</button>
+        </div>
+        <div class="progress-bar-wrap" style="margin-top:8px;">вопрос 4 из 9<div class="progress-bar"><div class="progress-fill" style="width:44%"></div></div></div>
+        <div class="msg">расскажи, чем занимаешься в профессиональном плане?</div>
+        <div class="msg out">Собираю ботов и агентов, ломаю, чиню, повторяю, учу врачей делать то же самое</div>
+        <div class="msg-time right">только что</div>
+        <div class="progress-bar-wrap">вопрос 5 из 9<div class="progress-bar"><div class="progress-fill" style="width:56%"></div></div></div>
+        <div class="msg">какие у тебя отношения с AI?</div>
+        <div class="inline-btns">
+          <button class="inline-btn">только начинаю</button>
+          <button class="inline-btn">иногда пользуюсь ChatGPT</button>
+          <button class="inline-btn">активно использую в работе</button>
+          <button class="inline-btn selected">строю свою AI-систему</button>
+          <button class="inline-btn">другое</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note green"><div class="note-label">🟢 Кнопки</div>Q3, Q5 - inline keyboard, выбор фиксируется сразу. Q4 - свободный текст, самое ценное поле для оператора.</div>
+    <div class="note"><div class="note-label">🟡 «другое» в Q5</div>Бот ждёт текстовое сообщение, прогресс-бар остаётся на Q5.</div>
+  </div>
+</div>
+
+<!-- SB4: Анкета Q6-Q7 -->
+<div class="screen" id="sb4">
+  <div class="phone-wrap">
+    <div class="screen-label">@matskevichaibot · анкета · Q6-Q7</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar orange">M</div>
+        <div><div class="phone-bar-name">matskevich ai</div><div class="phone-bar-status">бот</div></div>
+      </div>
+      <div class="phone-body">
+        <div class="progress-bar-wrap">вопрос 6 из 9<div class="progress-bar"><div class="progress-fill" style="width:67%"></div></div></div>
+        <div class="msg">был на gconf?</div>
+        <div class="inline-btns">
+          <button class="inline-btn selected">да</button>
+          <button class="inline-btn">нет</button>
+          <button class="inline-btn">не знаю что это</button>
+        </div>
+        <div class="progress-bar-wrap" style="margin-top:8px;">вопрос 7 из 9<div class="progress-bar"><div class="progress-fill" style="width:78%"></div></div></div>
+        <div class="msg">какой твой AI-стек? можно выбрать несколько</div>
+        <div class="inline-btns">
+          <button class="inline-btn">ChatGPT</button>
+          <button class="inline-btn selected">Claude</button>
+          <button class="inline-btn">Gemini / Grok</button>
+          <button class="inline-btn">Cursor</button>
+          <button class="inline-btn selected">Codex / Claude Code</button>
+          <button class="inline-btn" style="background:#d0f0d0;color:#1a7a35;font-weight:600;">готово ✓</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note green"><div class="note-label">🟢 Q7 мультивыбор</div>Каждое нажатие тоггл. «дотово -» фиксирует и переходит к Q8.</div>
+    <div class="note blue"><div class="note-label">🔵 Q6 - GConf</div>Операторский сигнал retention. Не попадает в анонс «знакомимся».</div>
+  </div>
+</div>
+
+<!-- SB5: Анкета Q8-Q9 + финал -->
+<div class="screen" id="sb5">
+  <div class="phone-wrap">
+    <div class="screen-label">@matskevichaibot · анкета · Q8-Q9 + финал</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar orange">M</div>
+        <div><div class="phone-bar-name">matskevich ai</div><div class="phone-bar-status">бот</div></div>
+      </div>
+      <div class="phone-body">
+        <div class="progress-bar-wrap">вопрос 8 из 9<div class="progress-bar"><div class="progress-fill" style="width:89%"></div></div></div>
+        <div class="msg">в чём ты видишь ценность комьюнити для себя лично?</div>
+        <div class="msg out">узкое место не код и не модель - это я. хочу среду где можно разбирать это честно, с людьми которые на той же волне</div>
+        <div class="msg-time right">только что</div>
+        <div class="progress-bar-wrap">вопрос 9 из 9<div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div></div>
+        <div class="msg">откуда узнала о blr?</div>
+        <div class="inline-btns">
+          <button class="inline-btn">канал димы</button>
+          <button class="inline-btn selected">от знакомых</button>
+          <button class="inline-btn">соцсети</button>
+          <button class="inline-btn">gconf</button>
+          <button class="inline-btn">другое</button>
+        </div>
+        <div class="msg" style="background:#f0fdf4;border-left:3px solid #30d158;border-radius:4px 14px 14px 14px;margin-top:8px;">спасибо за заявку!
+
+мы посмотрим и вернёмся в течение двух дней ✌️</div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note green"><div class="note-label">🟢 Q8 - главное</div>Самый ценный ответ. Попадает в анонс «знакомимся» как «что ищет здесь».</div>
+    <div class="note blue"><div class="note-label">🔵 После Q9</div>INSERT applications (pending) → уведомление оператору → «спасибо» → очистить state.</div>
+    <div class="note"><div class="note-label">🟡 Таймаут</div>Нужен reminder оператору через 24ч если не ответили на заявку.</div>
+  </div>
+</div>
+
+<!-- SB6: Уведомление оператору -->
+<div class="screen" id="sb6">
+  <div class="phone-wrap">
+    <div class="screen-label">группа «(org) blr learning design» · chat_id -5105250695</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar" style="background:#ff9f0a;">O</div>
+        <div><div class="phone-bar-name">(org) blr learning design</div><div class="phone-bar-status">группа операторов</div></div>
+      </div>
+      <div class="phone-body">
+        <div class="msg" style="max-width:95%;font-size:13px;">📋 новая заявка в комьюнити
+
+имя: Маша
+tg: @Maria_Kulikovskaia
+страна: Португалия
+занятость: солопренёр
+чем занимается: Собираю ботов и агентов, ломаю, чиню, повторяю, учу врачей делать то же самое
+с AI: строю свою AI-систему
+gconf: да
+стек: Claude, Codex / Claude Code
+ценность: узкое место не код и не модель - это я. хочу среду где можно разбирать это честно
+откуда: от знакомых
+
+заявка #47 · 12 апр 14:23</div>
+        <div class="inline-btns" style="margin-top:4px;">
+          <button class="inline-btn approve" onclick="showSB('sb7')">✓ одобрить</button>
+          <button class="inline-btn clarify">? уточнить</button>
+        </div>
+        <div class="msg-time">только что · @matskevichaibot</div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note green"><div class="note-label">🟢 Два действия</div>«✓ одобрить» → Маше ссылка Tribute 99€/мес.<br>«? уточнить» → напоминание оператору написать лично.</div>
+    <div class="note blue"><div class="note-label">🔵 Куда шлёт</div>OPERATOR_CHAT_ID = -5105250695. Не в личку - оба оператора видят все заявки.</div>
+    <div class="note"><div class="note-label">🟡 24ч reminder</div>«⏰ заявка #47 без ответа уже сутки» - автоматически если не ответили.</div>
+  </div>
+</div>
+
+<!-- SB7: Одобрение → ссылка -->
+<div class="screen" id="sb7">
+  <div class="phone-wrap">
+    <div class="screen-label">@matskevichaibot · личка Маши · одобрение</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar orange">M</div>
+        <div><div class="phone-bar-name">matskevich ai</div><div class="phone-bar-status">бот</div></div>
+      </div>
+      <div class="phone-body">
+        <div class="msg" style="background:#f0fdf4;border-left:3px solid #30d158;border-radius:4px 14px 14px 14px;">Маша, привет!
+
+посмотрели твою заявку - рады тебя видеть 🤍
+
+подписка на комьюнити - 99€ в месяц
+
+после оплаты сразу попадёшь в бот участника - там всё что нужно для старта</div>
+        <div class="inline-btns">
+          <button class="inline-btn" style="font-weight:600;">→ оплатить подписку - 99€/мес</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note green"><div class="note-label">🟢 Тон</div>«рады тебя видеть» - не «поздравляем с принятием». Тепло, конкретно, без лишнего.</div>
+    <div class="note blue"><div class="note-label">🔵 После оплаты</div>Tribute webhook → has_community=true → welcome от @brainloverobotsbot. Sales bot молчит.</div>
+    <div class="note"><div class="note-label">🟡 48ч без оплаты</div>«Маша, ссылка ещё жива - если появились вопросы, просто напиши :)». Один раз, без давления.</div>
+    <div class="note red"><div class="note-label">🔴 Tribute не упоминать</div>Кнопка просто «→ оплатить» - без слова Tribute в тексте.</div>
+  </div>
+</div>
+
+<!-- SB8: Заявка pending -->
+<div class="screen" id="sb8">
+  <div class="phone-wrap">
+    <div class="screen-label">@matskevichaibot · /start · status=pending</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar orange">M</div>
+        <div><div class="phone-bar-name">matskevich ai</div><div class="phone-bar-status">бот</div></div>
+      </div>
+      <div class="phone-body">
+        <div class="msg out">/start</div>
+        <div class="msg">твоя заявка уже на рассмотрении - вернёмся в течение двух дней ✌️
+
+пока можно заглянуть в канал</div>
+        <div class="inline-btns">
+          <button class="inline-btn">→ канал brain love & robots</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note green"><div class="note-label">🟢 Не даём подать повторно</div>status=pending → этот экран. Не начинаем анкету заново.</div>
+    <div class="note"><div class="note-label">🟡 status=draft</div>«ты начинал анкету - продолжим? вопрос 5 из 9» + кнопки «да / начать заново».</div>
+  </div>
+</div>
+
+<!-- SB9: /start - уже участник -->
+<div class="screen" id="sb9">
+  <div class="phone-wrap">
+    <div class="screen-label">@matskevichaibot · /start · has_community=true</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar orange">M</div>
+        <div><div class="phone-bar-name">matskevich ai</div><div class="phone-bar-status">бот</div></div>
+      </div>
+      <div class="phone-body">
+        <div class="msg out">/start</div>
+        <div class="msg">ты участник комьюнити 🤍
+
+для тебя - лаба health os по специальной цене 125€ (вместо 250€)</div>
+        <div class="inline-btns">
+          <button class="inline-btn" style="font-weight:600;">→ лаба health os - 125€</button>
+          <button class="inline-btn">→ перейти в бот участника</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <div class="note green"><div class="note-label">🟢 Скидка участника</div>has_community=true → 125€ вместо 250€. Tribute-ссылка community_discount.</div>
+    <div class="note blue"><div class="note-label">🔵 Кнопка «в бот участника»</div>→ t.me/brainloverobotsbot. Sales bot - точка входа, не платформа.</div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- 🆕 НОВЕНЬКИЙ — КТО ГДЕ (mini app section)    -->
+<!-- ============================================ -->
+
+<!-- LOC_HUB: Hub с новой карточкой «кто где» -->
+<a id="loc-hub-anchor"></a>
+<div class="screen" id="loc_hub">
+  <div class="phone-wrap">
+    <div class="screen-label">mini app · хаб · с новой карточкой 🆕 кто где</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app" style="min-height:520px">
+          <div class="mini-app-handle"></div>
+          <div style="background:#fff4cc;border:2px dashed #f0c040;border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:11px;font-weight:700;color:#8a6500;text-align:center;letter-spacing:0.5px;">🆕 новая секция hub — кто где</div>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:18px;font-weight:700;">brain, love & robots</div>
+            <div style="font-size:12px;color:#8e8e93;margin-top:2px;">сейчас: Radical Alignment</div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="background:#f9f9f9;border-radius:14px;padding:14px;cursor:pointer;">
+              <div style="font-size:14px;font-weight:700;">📅 календарь</div>
+              <div style="font-size:12px;color:#555;margin-top:4px;">звонки, костры, воркшопы — ближайшие события</div>
+            </div>
+
+            <div style="background:#f9f9f9;border-radius:14px;padding:14px;cursor:pointer;">
+              <div style="font-size:14px;font-weight:700;">📚 артефакты</div>
+              <div style="font-size:12px;color:#555;margin-top:4px;">записи звонков, промпты, сетапы участников</div>
+            </div>
+
+            <div style="background:#fffbe0;border:2px dashed #ffcc00;border-radius:14px;padding:14px;cursor:pointer;" onclick="show('loc1')">
+              <div style="font-size:14px;font-weight:700;">🌍 кто где <span style="font-size:9px;background:#ffcc00;color:#000;padding:2px 6px;border-radius:4px;margin-left:4px;">новенький</span></div>
+              <div style="font-size:12px;color:#555;margin-top:4px;">комьюнити по странам и городам</div>
+              <div style="font-size:11px;color:#2481cc;margin-top:6px;">открыть →</div>
+            </div>
+
+            <div style="background:#f9f9f9;border-radius:14px;padding:14px;">
+              <div style="font-size:14px;font-weight:700;">💬 чат и канал</div>
+              <div style="font-size:12px;color:#555;margin-top:4px;">общение и посты комьюнити</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note" style="border-color:#ffcc00;background:#fffbe0;">
+      <div class="note-label" style="color:#8a6500;">🆕 НОВЕНЬКИЙ</div>
+      Это копия hub с одной добавленной карточкой «🌍 кто где». Существующий s_hub не тронут — здесь видно как новая карточка сядет рядом с календарём, артефактами, чатом.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Что делает</div>
+      Тап → loc1 (если ещё не делился городом) или loc2 (если уже в списке). Логика на бэкенде по флагу visible/has_location.
+    </div>
+  </div>
+</div>
+
+<!-- LOC1: Пустой стейт -->
+<a id="loc1-anchor"></a>
+<div class="screen" id="loc1">
+  <div class="phone-wrap">
+    <div class="screen-label">/locations · первый заход · 🆕 новенький</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app" style="min-height:520px">
+          <div class="mini-app-handle"></div>
+          <div style="background:#fff4cc;border:2px dashed #f0c040;border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:11px;font-weight:700;color:#8a6500;text-align:center;letter-spacing:0.5px;">🆕 новенький · пустой стейт</div>
+          <button class="step-link" style="width:auto;display:inline-block;padding:4px 10px;font-size:11px;margin-bottom:8px;" onclick="show('loc_hub')">← назад в меню</button>
+          <div class="mini-app-title">🌍 кто где</div>
+          <div class="step-card-body" style="margin-top:8px;font-size:13px;color:#444;">скажи где ты — увидишь кто рядом</div>
+
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+            <div>
+              <div style="font-size:11px;color:#888;margin-bottom:4px;">страна</div>
+              <input type="text" placeholder="кипр" style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:10px;font-size:13px;background:#fff;">
+            </div>
+            <div>
+              <div style="font-size:11px;color:#888;margin-bottom:4px;">город</div>
+              <input type="text" placeholder="лимасол" style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:10px;font-size:13px;background:#fff;">
+            </div>
+          </div>
+
+          <div style="font-size:11px;color:#888;margin-top:10px;line-height:1.5;">видно только участникам. скрыть можно в любой момент.</div>
+
+          <div class="step-actions" style="margin-top:12px;">
+            <button class="step-done" onclick="show('loc2')">добавить меня</button>
+            <button class="step-skip" onclick="show('loc_hub')">не сейчас</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Без догадок</div>
+      Не пишем «мы знаем что ты из X» — поле страны пустое, человек сам вводит. Никаких автозаполнений из IP/телефона.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Свободный текст</div>
+      Никаких dropdown'ов. Свободный ввод, нормализация в нижний регистр для группировки на бэке.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Опт-ин</div>
+      «не сейчас» = не показываем, не блокируем. Вернуться можно из hub-карточки в любой момент.
+    </div>
+  </div>
+</div>
+
+<!-- LOC2: Заполненный стейт -->
+<a id="loc2-anchor"></a>
+<div class="screen" id="loc2">
+  <div class="phone-wrap">
+    <div class="screen-label">/locations · после opt-in · 🆕 новенький</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app" style="min-height:560px">
+          <div class="mini-app-handle"></div>
+          <div style="background:#fff4cc;border:2px dashed #f0c040;border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:11px;font-weight:700;color:#8a6500;text-align:center;letter-spacing:0.5px;">🆕 новенький · список</div>
+          <button class="step-link" style="width:auto;display:inline-block;padding:4px 10px;font-size:11px;margin-bottom:8px;" onclick="show('loc_hub')">← назад в меню</button>
+          <div class="mini-app-title">🌍 кто где</div>
+          <div style="font-size:12px;color:#8e8e93;margin-top:2px;">нас 47 в 12 странах</div>
+
+          <input type="text" placeholder="🔍 поиск по стране" style="width:100%;padding:9px 12px;border:1px solid #e0e0e0;border-radius:10px;font-size:13px;background:#fff;margin-top:10px;">
+
+          <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">
+
+            <div style="background:#f9f9f9;border-radius:12px;padding:10px 12px;">
+              <div style="font-size:13px;font-weight:700;">🇨🇾 Кипр</div>
+              <div style="margin-top:6px;padding-left:8px;">
+                <div style="font-size:12px;font-weight:600;color:#444;">Лимасол (3)</div>
+                <div style="font-size:11px;color:#555;margin-top:4px;display:flex;justify-content:space-between;align-items:center;">
+                  <span>• Ксения @ksenia</span><a href="#" style="color:#2481cc;text-decoration:none;font-size:10px;">[написать]</a>
+                </div>
+                <div style="font-size:11px;color:#555;margin-top:3px;display:flex;justify-content:space-between;align-items:center;">
+                  <span>• Антон @anton</span><a href="#" style="color:#2481cc;text-decoration:none;font-size:10px;">[написать]</a>
+                </div>
+                <div style="font-size:11px;color:#555;margin-top:3px;display:flex;justify-content:space-between;align-items:center;">
+                  <span>• Лёша @lyosha</span><a href="#" style="color:#2481cc;text-decoration:none;font-size:10px;">[написать]</a>
+                </div>
+              </div>
+              <div style="margin-top:8px;padding-left:8px;">
+                <div style="font-size:12px;font-weight:600;color:#444;">Никосия (1)</div>
+                <div style="font-size:11px;color:#555;margin-top:4px;display:flex;justify-content:space-between;align-items:center;">
+                  <span>• Маша @masha</span><a href="#" style="color:#2481cc;text-decoration:none;font-size:10px;">[написать]</a>
+                </div>
+              </div>
+            </div>
+
+            <div style="background:#f9f9f9;border-radius:12px;padding:10px 12px;">
+              <div style="font-size:13px;font-weight:700;">🇷🇺 Россия</div>
+              <div style="margin-top:6px;padding-left:8px;">
+                <div style="font-size:12px;font-weight:600;color:#444;">Москва (5)</div>
+                <div style="font-size:11px;color:#888;margin-top:4px;">...</div>
+              </div>
+            </div>
+
+            <div style="background:#f9f9f9;border-radius:12px;padding:10px 12px;">
+              <div style="font-size:13px;font-weight:700;">🇵🇹 Португалия</div>
+              <div style="margin-top:6px;padding-left:8px;">
+                <div style="font-size:12px;font-weight:600;color:#444;">Лиссабон (2)</div>
+                <div style="font-size:11px;color:#888;margin-top:4px;">...</div>
+              </div>
+            </div>
+
+          </div>
+
+          <div style="margin-top:14px;background:#eef7ff;border:1px solid #cfe4fa;border-radius:10px;padding:10px 12px;">
+            <div style="font-size:10px;color:#8e8e93;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">мой профиль</div>
+            <div style="font-size:12px;color:#222;font-weight:600;">🇨🇾 Кипр · Лимасол</div>
+            <div style="font-size:11px;color:#1a7a35;margin-top:2px;">✓ виден в списке</div>
+          </div>
+
+          <div class="step-actions" style="margin-top:10px;">
+            <button class="step-done" onclick="show('loc3')">изменить</button>
+            <button class="step-skip" onclick="show('loc4')">скрыть меня</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Группировка</div>
+      Страна → город → люди. Поиск фильтрует по стране: «кипр» → только кипрские города и участники.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 [написать]</div>
+      Открывает чат с участником в Telegram (tg://user?id=...). Без посредника бота.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Эмодзи флагов</div>
+      Берутся по коду страны автоматически. Если страна не распознана — без эмодзи, просто текст.
+    </div>
+  </div>
+</div>
+
+<!-- LOC3: Редактирование своего города -->
+<a id="loc3-anchor"></a>
+<div class="screen" id="loc3">
+  <div class="phone-wrap">
+    <div class="screen-label">/locations · редактирование · 🆕 новенький</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app">
+          <div class="mini-app-handle"></div>
+          <div style="background:#fff4cc;border:2px dashed #f0c040;border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:11px;font-weight:700;color:#8a6500;text-align:center;letter-spacing:0.5px;">🆕 новенький · редакт</div>
+          <button class="step-link" style="width:auto;display:inline-block;padding:4px 10px;font-size:11px;margin-bottom:8px;" onclick="show('loc_hub')">← назад в меню</button>
+          <div class="mini-app-title">🌍 мой город</div>
+
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <div style="font-size:11px;color:#888;margin-bottom:4px;">страна</div>
+              <input type="text" value="Кипр" style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:10px;font-size:13px;background:#fff;">
+            </div>
+            <div>
+              <div style="font-size:11px;color:#888;margin-bottom:4px;">город</div>
+              <input type="text" value="Лимасол" style="width:100%;padding:10px 12px;border:1px solid #e0e0e0;border-radius:10px;font-size:13px;background:#fff;">
+            </div>
+          </div>
+
+          <div class="step-actions" style="margin-top:14px;">
+            <button class="step-done" onclick="show('loc2')">сохранить</button>
+            <button class="step-skip" onclick="show('loc2')">отмена</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note blue">
+      <div class="note-label">🔵 Пере-нормализация</div>
+      На сохранении — trim + нижний регистр для группировки. В UI остаётся как ввёл.
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Переезд</div>
+      Один сценарий правки. Если человек переехал — просто меняет город. История не хранится (пока).
+    </div>
+  </div>
+</div>
+
+<!-- LOC4: Скрыт -->
+<a id="loc4-anchor"></a>
+<div class="screen" id="loc4">
+  <div class="phone-wrap">
+    <div class="screen-label">/locations · скрыт · 🆕 новенький</div>
+    <div class="phone">
+      <div class="phone-bar">
+        <div class="phone-bar-avatar">B</div>
+        <div>
+          <div class="phone-bar-name">brain love & robots</div>
+          <div class="phone-bar-status">платформа</div>
+        </div>
+      </div>
+      <div class="phone-body">
+        <div class="mini-app">
+          <div class="mini-app-handle"></div>
+          <div style="background:#fff4cc;border:2px dashed #f0c040;border-radius:10px;padding:6px 10px;margin-bottom:8px;font-size:11px;font-weight:700;color:#8a6500;text-align:center;letter-spacing:0.5px;">🆕 новенький · скрыт</div>
+          <button class="step-link" style="width:auto;display:inline-block;padding:4px 10px;font-size:11px;margin-bottom:8px;" onclick="show('loc_hub')">← назад в меню</button>
+          <div class="mini-app-title">🌍 ты скрыт</div>
+
+          <div class="step-card-body" style="margin-top:10px;font-size:13px;color:#444;line-height:1.6;">тебя не видно в списке. данные сохранены — вернуться можно когда захочешь.</div>
+
+          <div class="step-actions" style="margin-top:14px;grid-template-columns:1fr;">
+            <button class="step-done" onclick="show('loc2')">вернуть в список</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note green">
+      <div class="note-label">🟢 Не удаляем</div>
+      «скрыть меня» = visible=false. Данные остаются в БД. Возврат — одной кнопкой, ничего не вводить заново.
+    </div>
+    <div class="note blue">
+      <div class="note-label">🔵 Логика</div>
+      У записи два флага: has_location, visible. Скрытый = has_location:true, visible:false. Удаление — отдельный запрос (не из этого экрана).
+    </div>
+    <div class="note">
+      <div class="note-label">🟡 Что показать в hub</div>
+      Если visible=false → карточка «🌍 кто где» в hub всё равно ведёт на loc2 (можно смотреть других). Просто себя не видишь в списке.
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+// Participant bot screens (s1-s12)
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = parseInt(id.replace('s',''));
+  const btns = document.querySelectorAll('.nav-btn');
+  if (btns[idx-1]) btns[idx-1].classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// Sales bot screens (sb1-sb9)
+const sbScreens = ['sb1','sb2','sb3','sb4','sb5','sb6','sb7','sb8','sb9'];
+
+function showSB(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  const idx = sbScreens.indexOf(id);
+  const sbBtns = Array.from(document.querySelectorAll('.nav-btn')).filter(b =>
+    (b.getAttribute('onclick') || '').includes('showSB')
+  );
+  if (sbBtns[idx]) sbBtns[idx].classList.add('active');
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
